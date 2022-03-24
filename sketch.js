@@ -1,4 +1,4 @@
-const chess = new Chess();
+const chess = new Chess('r5k1/6pp/P7/6N1/8/r1N4P/6PK/6R1 w - - 0 1');
 const pieces = ['p', 'r', 'n', 'b', 'k', 'q' ];
 let squareSize = 50;
 let boardSize = 8 * squareSize;
@@ -43,18 +43,63 @@ function draw() {
   }
 }
 
+function numberToFile(col) {
+  return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'][col];
+}
+
+function generateMove(item, itemLocation, targetLocation, board) {
+  let isTaking = !!board[targetLocation.row][targetLocation.col];
+  let isPawn = item.type === 'p';
+  let originationFile = numberToFile(itemLocation.col);
+  let destinationFile = numberToFile(targetLocation.col);
+  console.log((8 - targetLocation.row).toString());
+  let finalString = 
+    (!isPawn ? item.type.toUpperCase() : '') + 
+    (isTaking && isPawn ? originationFile : '') +
+    (isTaking ? 'x' : '') +
+    (destinationFile) + (8 - targetLocation.row).toString();
+  return finalString;
+}
+
 function mouseClicked() {
   if (isInBoard(mouseX, mouseY)) {
     let clickLocation = { row: Math.floor((mouseY - (windowHeight / 2 - boardSize / 2)) / squareSize ), col: Math.floor((mouseX - (windowWidth / 2 - boardSize / 2)) / squareSize)  } ;
     let board = chess.board();
-    if (selection === clickLocation) {
+
+    // undo selections when the same square is clicked
+    if (selection.row === clickLocation.row && clickLocation.col === selection.col) {
       selection = {row: -1, col: -1};
       return;
     }
 
     let item = board[clickLocation.row][clickLocation.col];
+    // check if the user clicks on the pieces of the side they are playing
     if (item && (item.color === (playingAsWhite ? 'w' : 'b'))) {
       selection = clickLocation;
+    } else {
+      let originationFile = numberToFile(selection.col);
+      let originationRank = 8 - selection.row;
+      let destinationFile = numberToFile(clickLocation.col);
+      let destinationRank = 8 - clickLocation.row;
+      let promotion = 'q';
+
+
+      let playingItem = board[selection.row][selection.col];
+
+      if (playingItem.type === 'p' && destinationRank === 8 && originationRank === 7 ) {
+        promotion = prompt("Make your promotion choice", "q/r/b/n");
+      }
+
+      let result = chess.move({
+        from: `${originationFile}${originationRank}`,
+        to: `${destinationFile}${8 - clickLocation.row }`,
+        promotion: promotion
+      });
+      console.log(result);
+      if (result) {
+        // selection = {row: -1, col: -1};
+        playingAsWhite = !playingAsWhite;
+      }
     }
   }
 }
